@@ -9,7 +9,7 @@ router.post('/process_message', async (req, res) => {
     const { body, from } = req.body;
 
     try {
-        const response = await axios.post(`${apiUrl}/api/process_message`, {  
+        const response = await axios.post(`${apiUrl}/process_message`, {  
             body,
             from
         });

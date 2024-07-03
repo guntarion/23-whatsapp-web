@@ -44,22 +44,43 @@ client.on('ready', async () => {
 
 client.initialize();
 
+
+
+
+
 client.on('message', async msg => {
     console.log('MESSAGE RECEIVED', msg);
+    const chat = await msg.getChat();
 
     try {
-        const response = await axios.post(`${apiUrl}/api/process_message`, {  // Corrected the endpoint path
+        const response = await axios.post(`${apiUrl}/process_message`, { 
             body: msg.body,
-            from: msg.from
+            from: msg.from,
+            to : msg.to
         });
 
         const { reply, responseMessage } = response.data;
 
         if (responseMessage) {
             if (reply) {
-                msg.reply(responseMessage);
+                chat.sendSeen();
+                chat.sendStateTyping();
+                setTimeout(() => {
+                    msg.reply(responseMessage);
+                }, Math.random() * 1000 + 1000);
             } else {
-                client.sendMessage(msg.from, responseMessage);
+                chat.sendSeen();
+                chat.sendStateTyping();
+                const delay = Math.random() * 1000 + 1000;
+                setTimeout(() => {
+                    if (client && client.sendMessage) {
+                        client.sendMessage(msg.from, responseMessage);
+                    } else {
+                        console.error(
+                            'Client is not initialized or sendMessage is not a function'
+                        );
+                    }
+                }, delay);
             }
         }
     } catch (error) {
