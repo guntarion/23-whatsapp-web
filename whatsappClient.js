@@ -1,5 +1,9 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
+const axios = require('axios');
 const qrcode = require('qrcode-terminal');
+require('dotenv').config();
+
+const apiUrl = process.env.MODE === 'PROD' ? process.env.PROD_API_URL : process.env.DEV_API_URL;
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -7,14 +11,13 @@ const client = new Client({
     puppeteer: {
         headless: true,
         args: [
-            /* your args here */
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--single-process', // <- this one doesn't works in Windows
+            '--single-process', // <- this one doesn't work in Windows
             '--disable-gpu',
         ]
     }
@@ -44,10 +47,23 @@ client.initialize();
 client.on('message', async msg => {
     console.log('MESSAGE RECEIVED', msg);
 
-    if (msg.body === '!ping reply') {
-        msg.reply('pong');
-    } else if (msg.body === '!ping') {
-        client.sendMessage(msg.from, 'pong');
+    try {
+        const response = await axios.post(`${apiUrl}/api/process_message`, {  // Corrected the endpoint path
+            body: msg.body,
+            from: msg.from
+        });
+
+        const { reply, responseMessage } = response.data;
+
+        if (responseMessage) {
+            if (reply) {
+                msg.reply(responseMessage);
+            } else {
+                client.sendMessage(msg.from, responseMessage);
+            }
+        }
+    } catch (error) {
+        console.error('Error processing message:', error);
     }
 });
 
